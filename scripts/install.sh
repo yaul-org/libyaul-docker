@@ -2,8 +2,18 @@
 
 WGET_OPTIONS="--retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 0 --content-disposition"
 
+GIT_URL="https://github.com/ijacquez/libyaul.git"
+
 TOOLCHAIN_URL="https://drive.google.com/uc?export=download&confirm=no_antivirus&id=1j1O31Lzl2uyl2n9Hn2iFg92bHQB_vN3R"
 TOOLCHAIN_FILE="tool-chain-MinGW-x86_64-20180609.7z"
+
+change_env_value() {
+    local _variable="${1}"
+    local _value="${2}"
+
+    /usr/bin/awk -F '=' '/^export '"${_variable}"'=.+/ { print $1 "='"${_value}"'"; getline; } { print; }' yaul.env > yaul.env.tmp
+    /usr/bin/mv yaul.env.tmp yaul.env
+}
 
 # Self log
 exec &> >(/usr/bin/tee -a "${0}.log")
@@ -11,7 +21,10 @@ exec &> >(/usr/bin/tee -a "${0}.log")
 set -e
 set -x
 
-cd
+/usr/bin/mkdir -p /opt
+
+cd /opt
+
 /usr/bin/rm -r -f libyaul
 
 /usr/bin/pacman -S --noconfirm git make gcc wget unzip zip p7zip
@@ -26,26 +39,30 @@ cd
 # Download ${TOOLCHAIN_FILE}
 /usr/bin/wget ${WGET_OPTIONS} "${TOOLCHAIN_URL}"
 /usr/bin/rm -r -f /opt/tool-chains
-/usr/bin/mkdir -p /opt
-/usr/bin/7z x -o/opt/ "${HOME}/${TOOLCHAIN_FILE}"
+/usr/bin/7z x -o/opt/ "/opt/${TOOLCHAIN_FILE}"
 /usr/bin/sync
-/usr/bin/rm -f "${HOME}/${TOOLCHAIN_FILE}"
+/usr/bin/rm -f "/opt/${TOOLCHAIN_FILE}"
 
-/usr/bin/git clone https://github.com/ijacquez/libyaul.git
+/usr/bin/git clone "${GIT_URL}"
 cd libyaul
 /usr/bin/git submodule init
 /usr/bin/git submodule update -f
-/usr/bin/cp yaul.env.in ~/.yaul.env
-echo >> ~/.bashrc
-echo 'source ~/.yaul.env' >> ~/.bashrc
-source ~/.yaul.env
+/usr/bin/cp yaul.env.in yaul.env
+change_env_value "INSTALL_ROOT" "/opt/tool-chains"
+change_env_value "BUILD_ROOT" "/opt/libyaul/build"
+change_env_value "BUILD" "build"
+change_env_value "OPTION_DEV_CARTRIDGE" "0"
+mv yaul.env "${HOME}/.yaul.env"
+echo >> "${HOME}/.bashrc"
+echo 'source "${HOME}/.yaul.env"' >> "${HOME}/.bashrc"
+source "${HOME}/.yaul.env"
 SILENT=1 /usr/bin/make install-release
 # Avoid building genromfs
 /usr/bin/sed -i '/genromfs/d' tools/Makefile # Kludge due to issues with genromfs.exe
 SILENT=1 /usr/bin/make install-tools
 /usr/bin/mkdir -p /opt/tool-chains/bin
-/usr/bin/unzip -o ~/genromfs.zip -d /opt/tool-chains/bin/
-/usr/bin/rm -f ~/genromfs.zip
+/usr/bin/unzip -o /opt/genromfs.zip -d /opt/tool-chains/bin/
+/usr/bin/rm -f /opt/genromfs.zip
 /usr/bin/install -m 755 tools/genromfs/fsck.genromfs /opt/tool-chains/bin/
 # Avoid calling make-iso, as it's not portable
 /usr/bin/sed -i '/make-iso/d' /opt/tool-chains/share/post.common.mk # Kludge due to make-iso not being portable

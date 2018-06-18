@@ -13,7 +13,7 @@ function createShortcuts()
 {
     var windir = installer.environmentVariable("WINDIR");
     if (windir === "") {
-        QMessageBox["warning"]( "Error" , "Error", "Could not find windows installation directory");
+        QMessageBox["warning"]("Error", "Error", "Could not find windows installation directory");
         return;
     }
 
@@ -23,15 +23,15 @@ function createShortcuts()
     component.addOperation("CreateShortcut", cmdLocation, "@StartMenuDir@/MSYS2 MSYS.lnk", "-msys");
 
     if ("@BITNESS@bit" === "32bit") {
-        component.addOperation( "Execute",
+        component.addOperation("Execute",
                                ["@TargetDir@\\autorebase.bat"]);
     }
 
-    component.addOperation( "Execute",
+    component.addOperation("Execute",
                            ["@TargetDir@\\usr\\bin\\bash.exe", "--login", "-c", "exit"]);
 
     // Execute yaul specific script
-    component.addOperation( "Execute", ["@TargetDir@\\msys2.exe", "@TargetDir@\\yaul-install.sh"]);
+    component.addOperation("Execute", ["@TargetDir@\\usr\\bin\\bash.exe", "--login", "-c", "/yaul-install.sh"]);
 }
 
 Component.prototype.createOperations = function()
