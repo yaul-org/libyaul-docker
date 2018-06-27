@@ -27,14 +27,11 @@ cd /opt
 
 /usr/bin/rm -r -f libyaul
 
-/usr/bin/pacman -S --noconfirm git make gcc wget unzip zip p7zip
+/usr/bin/pacman -S --noconfirm git make gcc wget unzip zip p7zip diffutils dos2unix
 
 /usr/bin/sync
 /usr/bin/sync
 /usr/bin/sync
-
-# Download genromfs.zip
-/usr/bin/wget ${WGET_OPTIONS} "https://drive.google.com/uc?export=download&confirm=no_antivirus&id=1AEnUxJugEqYIb2Z7EjHF6C6yPsXOPrRP"
 
 # Download ${TOOLCHAIN_FILE}
 /usr/bin/wget ${WGET_OPTIONS} "${TOOLCHAIN_URL}"
@@ -57,13 +54,7 @@ echo >> "${HOME}/.bashrc"
 echo 'source "${HOME}/.yaul.env"' >> "${HOME}/.bashrc"
 source "${HOME}/.yaul.env"
 SILENT=1 /usr/bin/make install-release
-# Avoid building genromfs
-/usr/bin/sed -i '/genromfs/d' tools/Makefile # Kludge due to issues with genromfs.exe
 SILENT=1 /usr/bin/make install-tools
-/usr/bin/mkdir -p /opt/tool-chains/bin
-/usr/bin/unzip -o /opt/genromfs.zip -d /opt/tool-chains/bin/
-/usr/bin/rm -f /opt/genromfs.zip
-/usr/bin/install -m 755 tools/genromfs/fsck.genromfs /opt/tool-chains/bin/
 # Avoid calling make-iso, as it's not portable
 /usr/bin/sed -i '/make-iso/d' /opt/tool-chains/share/post.common.mk # Kludge due to make-iso not being portable
 /usr/bin/rm -f -- "${0}"
