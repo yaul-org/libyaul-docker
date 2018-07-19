@@ -27,7 +27,7 @@ cd /opt
 
 /usr/bin/rm -r -f libyaul
 
-/usr/bin/pacman -S --noconfirm git make gcc wget unzip zip p7zip diffutils dos2unix
+/usr/bin/pacman -S --noconfirm git make gcc wget unzip zip p7zip diffutils dos2unix patch tar
 
 /usr/bin/sync
 /usr/bin/sync
