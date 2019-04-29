@@ -45,10 +45,11 @@ cd libyaul
 /usr/bin/git submodule init
 /usr/bin/git submodule update -f
 /usr/bin/cp yaul.env.in yaul.env
-change_env_value "INSTALL_ROOT" "/opt/tool-chains"
-change_env_value "BUILD_ROOT" "/opt/libyaul/build"
-change_env_value "BUILD" "build"
-change_env_value "OPTION_DEV_CARTRIDGE" "0"
+change_env_value "YAUL_INSTALL_ROOT" "/opt/tool-chains"
+change_env_value "YAUL_BUILD_ROOT" "/opt/libyaul/build"
+change_env_value "YAUL_BUILD" "build"
+change_env_value "YAUL_RTAGS" "false"
+change_env_value "YAUL_OPTION_DEV_CARTRIDGE" "0"
 mv yaul.env "${HOME}/.yaul.env"
 echo >> "${HOME}/.bashrc"
 echo 'source "${HOME}/.yaul.env"' >> "${HOME}/.bashrc"
