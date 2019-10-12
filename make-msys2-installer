@@ -21,8 +21,12 @@ fi
 _archivegen=/mingw${_bitness}/bin/archivegen.exe
 _binarycreator=/mingw${_bitness}/bin/binarycreator.exe
 _installerbase=/mingw${_bitness}/bin/installerbase.exe
+_7z="/usr/bin/7z" # 7z is a script
 _newmsysbase=/tmp/newmsys
 _newmsys=${_newmsysbase}/msys"${_bitness}"
+
+_archive_msys64_base="msys64-base.7z"
+_archive_base="msys2-base-x86_64-20190524.tar.xz"
 
 declare -a undo_commands
 
@@ -66,8 +70,21 @@ download_file() {
 }
 
 do_copy_scripts() {
-  cp -v -f "${_thisdir}/scripts/install.sh" "${_newmsys}/yaul-install.sh"
-  chmod +x "${_newmsys}/yaul-install.sh"
+  # At some point, traverse through ${_newmsys}/etc/post-install/ and determine
+  # the last number:
+  #
+  # local _last_number=`find . -type f -name "*.post" | \
+  #   sort -n | \
+  #   awk '/^\.\/[0-9][0-9]-.*\.post$/ {
+  #          sub(/^\.\//,"");
+  #          sub(/-.+\.post$/,"");
+  #        }
+  #        END { print }'`
+  #
+  # At this point, if _last_number is empty, then set to "01". Otherwise,
+  # increment
+
+  cp -v -f "${_thisdir}/scripts/install.sh" "${_newmsys}/etc/post-install/09-yaul-install.post"
 }
 
 do_copy_toolchain() {
@@ -94,16 +111,18 @@ undo_seds() {
 }
 
 create_archives() {
+  # Collect paths to archive
   local _data="${_ifwroot}"/packages/com.msys2.root.base/data
   [ -d "${_data}" ] && rm -rf "${_data}"
   mkdir -p "${_data}"
   local _dirs=
-  for curr_dir in /etc /opt /var /tmp /usr /mingw32 /mingw64 /msys2_shell.cmd /msys2.exe /mingw32.exe /mingw64.exe /msys2.ini /mingw32.ini /mingw64.ini /msys2.ico /autorebase.bat autorebasebase1st.bat /yaul-install.sh; do
-    if [[ -d ${_newmsys}${curr_dir} || -f ${_newmsys}${curr_dir} ]]; then
+  for curr_dir in /etc /opt /var /tmp /usr /mingw32 /mingw64 /msys2_shell.cmd /msys2.exe /mingw32.exe /mingw64.exe /msys2.ini /mingw32.ini /mingw64.ini /msys2.ico /autorebase.bat autorebasebase1st.bat; do
+    if [ -d ${_newmsys}${curr_dir} ] || [ -f ${_newmsys}${curr_dir} ]; then
       _dirs="${_dirs} ${_newmsys}$curr_dir"
     fi
   done
 
+  # Create qt-ifw/packages/com.msys2.root.base/data/msys64.7z file
   if [ -n "${_dirs}" ]; then
     local _compress_cmd="${_archivegen} ${_data}/msys${_bitness}.7z ${_dirs}"
     pushd / > /dev/null
@@ -117,6 +136,7 @@ create_archives() {
       fi
     popd > /dev/null
 
+    # Create msys2-base-@BITNESS@-YYYYMMDD.tar.xz
     pushd ${_newmsysbase} > /dev/null
       local _compress_cmd2="/usr/bin/tar --transform='s/:/_/g' --dereference --hard-dereference -cJf ${_thisdir}/${_filename2} msys${_bitness}"
       echo "Run: ${_compress_cmd2} ..." | tee -a ${_log}
@@ -153,8 +173,22 @@ create_chroot_system() {
     mkdir -p var/log
     mkdir -p tmp
 
-    eval "pacman -Syu --root \"${_newmsys}\"" | tee -a ${_log}
-    eval "pacman -S base --noconfirm --root \"${_newmsys}\"" | tee -a ${_log}
+    if [ -z "${MSYS2_INSTALLER_USE_SYS}" ]; then
+      eval "pacman -Syu --root \"${_newmsys}\"" | tee -a ${_log}
+      eval "pacman -S base --noconfirm --root \"${_newmsys}\"" | tee -a ${_log}
+    else
+      if [ ! -f "${_archive_msys64_base}" ]; then
+        exit_cleanly "1" "failed to find '${_archive_msys64_base}' (newmsys2)"
+      fi
+
+      if ! "${_7z}" t "${_archive_msys64_base}" >/dev/null 2>&1; then
+        exit_cleanly "1" "failed to extract '${_archive_msys64_base}'"
+      fi
+
+      eval "${_7z} x -o\"${_newmsys}\" \"${_archive_msys64_base}\"" | tee -a ${_log}
+
+      eval "pacman -U \"${_archive_base}\"" | tee -a ${_log}
+    fi
     _result=$?
     if [ "${_result}" -ne "0" ]; then
       exit_cleanly "1" "failed to create newmsys2 via command 'pacman -S base --noconfirm --root ${_newmsys}'"
@@ -167,7 +201,15 @@ if [ ! -f "${_archivegen}" ]; then
 fi
 
 if [ ! -f "${_archivegen}" ]; then
-  exit_cleanly "2" "installation of qt installer framework failed. See ${_log}"
+  exit_cleanly "2" "installation of mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework-git failed. See ${_log}"
+fi
+
+if ! [ -f "${_7z}" ]; then
+  eval "pacman -S --noconfirm msys/p7zip" | tee -a ${_log}
+fi
+
+if [ ! -f "${_7z}" ]; then
+  exit_cleanly "2" "installation of p7zip failed. See ${_log}"
 fi
 
 if [ -f "${_log}" ]; then

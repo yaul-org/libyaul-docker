@@ -28,9 +28,6 @@ function createShortcuts()
 
     component.addOperation("Execute",
                            ["@TargetDir@\\usr\\bin\\bash.exe", "--login", "-c", "exit"]);
-
-    // Execute yaul specific script
-    component.addOperation("Execute", ["@TargetDir@\\usr\\bin\\bash.exe", "--login", "-c", "/yaul-install.sh"]);
 }
 
 Component.prototype.createOperations = function()
