@@ -25,8 +25,7 @@ _7z="/usr/bin/7z" # 7z is a script
 _newmsysbase=/tmp/newmsys
 _newmsys=${_newmsysbase}/msys"${_bitness}"
 
-_archive_msys64_base="msys64-base.7z"
-_archive_base="msys2-base-x86_64-20190524.tar.xz"
+_archive_msys64_base="msys2-base-x86_64-20190524.tar.xz"
 
 declare -a undo_commands
 
@@ -84,15 +83,17 @@ do_copy_scripts() {
   # At this point, if _last_number is empty, then set to "01". Otherwise,
   # increment
 
+  mkdir -p "${_newmsys}/etc/post-install"
   cp -v -f "${_thisdir}/scripts/install.sh" "${_newmsys}/etc/post-install/09-yaul-install.post"
 }
 
 do_copy_toolchain() {
-  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/opt/tool-chain.tar.bz2"
-
   rm -r -f "${_newmsys}/opt/x-tools"
   mkdir -p "${_newmsys}/opt/x-tools"
-  /usr/bin/tar mxvfjp "${_newmsys}/opt/tool-chain.tar.bz2" -C "${_newmsys}/opt/x-tools"
+
+  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/opt/tool-chain.tar.bz2"
+
+  eval "/usr/bin/tar mxvfjp \"${_newmsys}/opt/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a ${_log}
 }
 
 do_seds() {
@@ -169,30 +170,20 @@ create_chroot_system() {
   mkdir -p "${_newmsys}"
   pushd "${_newmsys}" > /dev/null
 
-    mkdir -p var/lib/pacman
-    mkdir -p var/log
-    mkdir -p tmp
+  mkdir -p var/lib/pacman
+  mkdir -p var/log
+  mkdir -p tmp
 
-    if [ -z "${MSYS2_INSTALLER_USE_SYS}" ]; then
-      eval "pacman -Syu --root \"${_newmsys}\"" | tee -a ${_log}
-      eval "pacman -S base --noconfirm --root \"${_newmsys}\"" | tee -a ${_log}
-    else
-      if [ ! -f "${_archive_msys64_base}" ]; then
-        exit_cleanly "1" "failed to find '${_archive_msys64_base}' (newmsys2)"
-      fi
+  if [ ! -f "${_thisdir}/${_archive_msys64_base}" ]; then
+    exit_cleanly "1" "failed to find '${_thisdir}/${_archive_msys64_base}' (newmsys2)"
+  fi
 
-      if ! "${_7z}" t "${_archive_msys64_base}" >/dev/null 2>&1; then
-        exit_cleanly "1" "failed to extract '${_archive_msys64_base}'"
-      fi
+  eval "/usr/bin/tar -mxvpf \"${_thisdir}/${_archive_msys64_base}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a ${_log}
+  _result=$?
+  if [ "${_result}" -ne "0" ]; then
+    exit_cleanly "1" "failed to create newmsys2"
+  fi
 
-      eval "${_7z} x -o\"${_newmsys}\" \"${_archive_msys64_base}\"" | tee -a ${_log}
-
-      eval "pacman -U \"${_archive_base}\"" | tee -a ${_log}
-    fi
-    _result=$?
-    if [ "${_result}" -ne "0" ]; then
-      exit_cleanly "1" "failed to create newmsys2 via command 'pacman -S base --noconfirm --root ${_newmsys}'"
-    fi
   popd > /dev/null
 }
 
@@ -220,8 +211,8 @@ echo "Creating MSYS2 chroot system ${_newmsys}" | tee -a ${_log}
 create_chroot_system
 
 echo "Creating MSYS2 installer /tmp/${_filename}" | tee -a ${_log}
-if [ -f /tmp/${_filename} ]; then
-  rm -f /tmp/${_filename}
+if [ -f "/tmp/${_filename}" ]; then
+  rm -f "/tmp/${_filename}"
 fi
 
 do_copy_scripts
