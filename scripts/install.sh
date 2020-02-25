@@ -1,20 +1,21 @@
 {
 PACMAN_PACKAGES=(
-    diffutils \
-    dos2unix \
-    gcc \
-    git \
-    make \
-    mingw-w64-x86_64-libftdi \
-    p7zip \
-    patch \
+    diffutils
+    dos2unix
+    gcc
+    git
+    make
+    mingw-w64-x86_64-libftdi
+    p7zip
+    patch
     pkg-config
-    python3 \
-    python3-pip \
-    tar \
-    unzip \
-    wget \
-    zip \
+    python3
+    python3-pip
+    tar
+    unzip
+    wget
+    xorriso
+    zip
 )
 
 # Install dependencies
