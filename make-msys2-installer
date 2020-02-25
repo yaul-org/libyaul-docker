@@ -1,31 +1,50 @@
 #!/usr/bin/env bash
 
-set -x
 set -e
 
-_thisdir="$(dirname $0)"
+_thisdir="$(dirname "${0}")"
 test "${_thisdir}" = "." && _thisdir=${PWD}
 _ifwroot="${_thisdir}"/qt-ifw
 _arch=$(uname -m)
 _date=$(date +'%Y%m%d')
 _dateqif=$(date +'%Y-%m-%d')
 _version=${_date}
-_filename=yaul-msys2-${_arch}-${_date}.exe
-_filename2=yaul-msys2-base-${_arch}-${_date}.tar.xz
+_filename=yaul-${_arch}-${_date}.exe
 _log=/tmp/installer-${_arch}-${_date}.log
 if [ "${_arch}" = "x86_64" ]; then
   _bitness=64
 else
   _bitness=32
 fi
-_archivegen=/mingw${_bitness}/bin/archivegen.exe
-_binarycreator=/mingw${_bitness}/bin/binarycreator.exe
-_installerbase=/mingw${_bitness}/bin/installerbase.exe
+_archivegen="/mingw${_bitness}/bin/archivegen.exe"
+_binarycreator="/mingw${_bitness}/bin/binarycreator.exe"
+_installerbase="/mingw${_bitness}/bin/installerbase.exe"
 _7z="/usr/bin/7z" # 7z is a script
+_tar="/usr/bin/tar"
+_git="/usr/bin/git"
 _newmsysbase=/tmp/newmsys
 _newmsys=${_newmsysbase}/msys"${_bitness}"
 
+# Hard coded, as it's more stable to have control over which base you're using
 _archive_msys64_base="msys2-base-x86_64-20190524.tar.xz"
+
+_pacman_packages=(
+    diffutils \
+    dos2unix \
+    gcc \
+    git \
+    make \
+    mingw-w64-x86_64-libftdi \
+    p7zip \
+    patch \
+    pkg-config
+    python3 \
+    python3-pip \
+    tar \
+    unzip \
+    wget \
+    zip \
+)
 
 declare -a undo_commands
 
@@ -33,7 +52,7 @@ _exitcode=5
 
 exit_with_undo() {
   for _cmd in ${undo_commands[@]}; do
-    eval "${_cmd}" | tee -a ${_log}
+    eval "${_cmd}" | tee -a "${_log}"
   done
   exit ${_exitcode}
 }
@@ -41,17 +60,23 @@ exit_with_undo() {
 exit_cleanly() {
   _exitcode=$1; shift;
   local _message=$1; shift;
-  echo "${_message}" | tee -a ${_log}
+  echo "${_message}" | tee -a "${_log}"
   exit_with_undo
 }
 
 download_file() {
-    local _id=${1}
-    local _file=${2}
+    local _id
+    _id=${1}
+
+    local _file
+    _file=${2}
 
     rm -r -f /tmp/cookies.txt
 
-    local _data=$(/usr/bin/wget \
+    printf -- "Downloading \"%s\"\n" "${_file}" | tee -a "${_log}"
+
+    local _data
+    _data=$(/usr/bin/wget \
       --quiet \
       --save-cookies /tmp/cookies.txt \
       --keep-session-cookies \
@@ -68,32 +93,141 @@ download_file() {
     rm -r -f /tmp/cookies.txt
 }
 
-do_copy_scripts() {
-  # At some point, traverse through ${_newmsys}/etc/post-install/ and determine
-  # the last number:
-  #
-  # local _last_number=`find . -type f -name "*.post" | \
-  #   sort -n | \
-  #   awk '/^\.\/[0-9][0-9]-.*\.post$/ {
-  #          sub(/^\.\//,"");
-  #          sub(/-.+\.post$/,"");
-  #        }
-  #        END { print }'`
-  #
-  # At this point, if _last_number is empty, then set to "01". Otherwise,
-  # increment
+do_create_dirs() {
+  /usr/bin/rm -r -f "${_newmsys}/opt/x-tools"
+  /usr/bin/mkdir -p "${_newmsys}/opt/x-tools"
 
+  /usr/bin/rm -r -f "${_newmsys}/opt/.install-files"
+  /usr/bin/mkdir -p "${_newmsys}/opt/.install-files"
+}
+
+do_copy_toolchain() {
+  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/opt/.install-files/tool-chain.tar.bz2"
+
+  eval "/usr/bin/tar mxvfjp \"${_newmsys}/opt/.install-files/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a "${_log}"
+}
+
+do_hack_toolchain() {
+  # HACK: Install mkisofs.zip
+  /usr/bin/unzip -d "${_newmsys}/opt/x-tools/sh2eb-elf/bin" "${_newmsys}/opt/.install-files/mkisofs.zip"
+}
+
+do_install_packages() {
+  /usr/bin/pacman -Sw ${_pacman_packages[@]} --noconfirm --config "pacman.conf" > /tmp/download.lst
+}
+
+do_download_other_dependencies() {
+  download_file "1EPnQQ1hIgQ05Laydsrsib4Iz7W_ZSgv8" "${_newmsys}/opt/.install-files/mkisofs.zip"
+
+  /usr/bin/pip3 download click -d "${_newmsys}/opt/.install-files/pip3" --no-binary :all:-v 2>&1
+}
+
+do_copy_post_install_script() {
   mkdir -p "${_newmsys}/etc/post-install"
   cp -v -f "${_thisdir}/scripts/install.sh" "${_newmsys}/etc/post-install/09-yaul-install.post"
 }
 
-do_copy_toolchain() {
-  rm -r -f "${_newmsys}/opt/x-tools"
-  mkdir -p "${_newmsys}/opt/x-tools"
+do_repository_clone() {
+  pushd . >/dev/null 2>&1
 
-  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/opt/tool-chain.tar.bz2"
+  mkdir -p "${_newmsys}/opt"
+  cd "${_newmsys}/opt"
+  if [ ! -d "libyaul" ]; then
+    /usr/bin/git clone "https://github.com/ijacquez/libyaul.git"
+  fi
+  cd "${_newmsys}/opt/libyaul"
+  /usr/bin/git submodule init
+  /usr/bin/git submodule update -f
 
-  eval "/usr/bin/tar mxvfjp \"${_newmsys}/opt/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a ${_log}
+  popd >/dev/null 2>&1
+}
+
+do_create_motd() {
+  cat > "${_newmsys}/etc/motd.tail" <<EOF
+printf -- "[H[2J"
+
+_cols=\`tput cols\`
+_lines=\`tput lines\`
+
+printf -- "*%.0s" \`seq 1 \${_cols}\`
+
+printf -- "* Paths\n\
+**   Examples: /opt/libyaul/examples\n\
+**      Tools: /opt/libyaul/tools\n\
+** Tool-chain: $YAUL_INSTALL_ROOT\n\
+*\n"
+
+printf -- "* Environment variables\n"
+# _envs=\$(env | grep 'YAUL' | sort)
+# _max_line=\`printf -- "\${_envs}\n" | sed -E 's/([^=]+)=.*$/\1/g' | wc -L\`
+
+env | grep 'YAUL' | sort | awk -F= '{ printf "** %-25s = %s\n", \$1, \$2 }'
+
+printf -- "*%.0s" \`seq 1 \${_cols}\`
+
+unset _cols
+unset _lines
+EOF
+}
+
+do_setup_bashrc() {
+  # Append to .bashrc
+  cat >> "${_newmsys}/etc/skel/.bashrc" <<"EOF"
+
+# Begin Yaul customization {
+  # Set up environment
+  source "${HOME}/.yaul.env"
+
+  # Update PATH
+  export PATH="${YAUL_INSTALL_ROOT}/bin:${PATH}"
+
+  # Show MOTD
+  [ -e ".hushlogin" ] || (source /etc/motd.tail 2>/dev/null || true)
+# } End
+EOF
+}
+
+do_setup_yaul_env() {
+  /usr/bin/rm -r -f /tmp/yaul.env
+  /usr/bin/cp "${_newmsys}/opt/libyaul/yaul.env.in" /tmp/yaul.env
+
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_INSTALL_ROOT)=.*#\1=/opt/x-tools/sh2eb-elf#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD_ROOT)=.*#\1=/opt/libyaul#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD)=.*#\1=build#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_CDB)=.*#\1=1#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_OPTION_DEV_CARTRIDGE)=.*#\1=0#g" "/tmp/yaul.env"
+
+  /usr/bin/mv /tmp/yaul.env "${_newmsys}/etc/skel/.yaul.env"
+}
+
+do_build_yaul() {
+  /usr/bin/rm -r -f /tmp/yaul.env
+  /usr/bin/cp "${_newmsys}/opt/libyaul/yaul.env.in" /tmp/yaul.env
+
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_INSTALL_ROOT)=.*#\1=${_newmsys}/opt/x-tools/sh2eb-elf#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD_ROOT)=.*#\1=/tmp#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD)=.*#\1=yaul.build#g" "/tmp/yaul.env"
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_CDB)=.*#\1=0#g" "/tmp/yaul.env"
+  # We want to compile ssload
+  /usr/bin/sed -E -i "s#^(export\s+YAUL_OPTION_DEV_CARTRIDGE)=.*#\1=1#g" "/tmp/yaul.env"
+
+  pushd . >/dev/null 2>&1
+  cd ${_newmsys}/opt/libyaul
+
+  # Build
+  /usr/bin/bash -e <<EOT
+/usr/bin/rm -r -f /tmp/yaul.build
+/usr/bin/mkdir -p /tmp/yaul.build
+. /tmp/yaul.env
+NOCOLOR=1 SILENT=1 /usr/bin/make install-release
+NOCOLOR=1 SILENT=1 /usr/bin/make install-tools
+/usr/bin/rm -r -f /tmp/yaul.build
+EOT
+
+  # HACK: Undo
+  /usr/bin/git checkout tools/Makefile
+
+  popd >/dev/null 2>&1
 }
 
 do_seds() {
@@ -127,26 +261,13 @@ create_archives() {
   if [ -n "${_dirs}" ]; then
     local _compress_cmd="${_archivegen} ${_data}/msys${_bitness}.7z ${_dirs}"
     pushd / > /dev/null
-      echo "Run: ${_compress_cmd} ..." | tee -a ${_log}
-      eval "${_compress_cmd}" 2>&1 | tee -a ${_log}
+      echo "Run: ${_compress_cmd} ..." | tee -a "${_log}"
+      eval "${_compress_cmd}" 2>&1 | tee -a "${_log}"
       _result=$?
       if [ "${_result}" -eq "0" ]; then
-            echo " archivegen succeeded. Created ${_data}/msys${_bitness}.7z" | tee -a ${_log}
+            echo " archivegen succeeded. Created ${_data}/msys${_bitness}.7z" | tee -a "${_log}"
       else
             exit_cleanly "3" "archivegen failed. See ${_log}"
-      fi
-    popd > /dev/null
-
-    # Create msys2-base-@BITNESS@-YYYYMMDD.tar.xz
-    pushd ${_newmsysbase} > /dev/null
-      local _compress_cmd2="/usr/bin/tar --transform='s/:/_/g' --dereference --hard-dereference -cJf ${_thisdir}/${_filename2} msys${_bitness}"
-      echo "Run: ${_compress_cmd2} ..." | tee -a ${_log}
-      eval "${_compress_cmd2}" 2>&1 | tee -a ${_log}
-      _result=$?
-      if [ "${_result}" -eq "0" ]; then
-            echo " tar succeeded. Created " | tee -a ${_log}
-      else
-            die "MSYS2 compressing fail. See ${_log}"
       fi
     popd > /dev/null
   fi
@@ -160,10 +281,10 @@ make_installer() {
     -c \"${_ifwroot}/config/config.xml\" \
     --offline-only \
     \"${_filename}\" \
-    -v"  | tee -a ${_log}
+    -v"  | tee -a "${_log}"
 }
 
-trap exit_with_undo 1 2 15
+trap exit_with_undo 0 1 2 15
 
 create_chroot_system() {
   [ -d ${_newmsysbase} ] && rm -rf ${_newmsysbase}
@@ -178,7 +299,7 @@ create_chroot_system() {
     exit_cleanly "1" "failed to find '${_thisdir}/${_archive_msys64_base}' (newmsys2)"
   fi
 
-  eval "/usr/bin/tar -mxvpf \"${_thisdir}/${_archive_msys64_base}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a ${_log}
+  eval "/usr/bin/tar -mxvpf \"${_thisdir}/${_archive_msys64_base}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a "${_log}"
   _result=$?
   if [ "${_result}" -ne "0" ]; then
     exit_cleanly "1" "failed to create newmsys2"
@@ -188,36 +309,61 @@ create_chroot_system() {
 }
 
 if [ ! -f "${_archivegen}" ]; then
-  eval "pacman -S --noconfirm mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework-git" | tee -a ${_log}
+  eval "pacman -S --noconfirm mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework" | tee -a "${_log}"
 fi
 
 if [ ! -f "${_archivegen}" ]; then
-  exit_cleanly "2" "installation of mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework-git failed. See ${_log}"
+  exit_cleanly "2" "installation of mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework failed. See ${_log}"
 fi
 
 if ! [ -f "${_7z}" ]; then
-  eval "pacman -S --noconfirm msys/p7zip" | tee -a ${_log}
+  eval "pacman -S --noconfirm msys/p7zip" | tee -a "${_log}"
 fi
 
 if [ ! -f "${_7z}" ]; then
   exit_cleanly "2" "installation of p7zip failed. See ${_log}"
 fi
 
-if [ -f "${_log}" ]; then
-  rm "${_log}"
+if ! [ -f "${_tar}" ]; then
+  eval "pacman -S --noconfirm tar" | tee -a "${_log}"
 fi
 
-echo "Creating MSYS2 chroot system ${_newmsys}" | tee -a ${_log}
+if [ ! -f "${_tar}" ]; then
+  exit_cleanly "2" "installation of tar failed. See ${_log}"
+fi
+
+if ! [ -f "${_git}" ]; then
+  eval "pacman -S --noconfirm git" | tee -a "${_log}"
+fi
+
+if [ ! -f "${_git}" ]; then
+  exit_cleanly "2" "installation of git failed. See ${_log}"
+fi
+
+if [ -f "${_log}" ]; then
+  rm -f "${_log}"
+fi
+
+echo "Creating Yaul chroot system ${_newmsys}" | tee -a "${_log}"
 create_chroot_system
 
-echo "Creating MSYS2 installer /tmp/${_filename}" | tee -a ${_log}
+echo "Creating Yaul installer /tmp/${_filename}" | tee -a "${_log}"
 if [ -f "/tmp/${_filename}" ]; then
   rm -f "/tmp/${_filename}"
 fi
 
-do_copy_scripts
+do_create_dirs
 do_copy_toolchain
 do_seds
+do_copy_post_install_script
+do_repository_clone
+do_setup_yaul_env
+do_setup_bashrc
+do_create_motd
+do_build_yaul
+do_install_packages
+do_download_other_dependencies
+do_hack_toolchain
 create_archives
 make_installer
 exit_cleanly "0" "All done, see ${_filename}"
