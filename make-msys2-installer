@@ -190,7 +190,7 @@ if [[ ! -f "\${HOME}/.mednafen/firmware/mpr-17933.bin" ]] &&
 fi
 
 # Check Yabause BIOS paths
-if [[ ! -f "\${HOME}/.yabause/firmware/sega_101.bin" ]]; then
+if [[ ! -f "\${HOME}/.yabause/sega_101.bin" ]]; then
    printf -- "\
 *\n\
 * Place BIOS \"sega_101.bin\" in:\n\
