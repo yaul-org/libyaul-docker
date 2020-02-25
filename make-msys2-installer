@@ -11,11 +11,7 @@ _dateqif=$(date +'%Y-%m-%d')
 _version=${_date}
 _filename=yaul-${_arch}-${_date}.exe
 _log=/tmp/installer-${_arch}-${_date}.log
-if [ "${_arch}" = "x86_64" ]; then
-  _bitness=64
-else
-  _bitness=32
-fi
+_bitness=64
 _archivegen="/mingw${_bitness}/bin/archivegen.exe"
 _binarycreator="/mingw${_bitness}/bin/binarycreator.exe"
 _installerbase="/mingw${_bitness}/bin/installerbase.exe"
@@ -94,25 +90,57 @@ download_file() {
     rm -r -f /tmp/cookies.txt
 }
 
+undo_seds() {
+  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" \) -exec sed -i "s|<ReleaseDate>${_dateqif}<|<ReleaseDate>@DATE@<|g" "{}" \;
+  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" \) -exec sed -i "s|<Version>${_version}<|<Version>@VERSION@<|g" "{}" \;
+  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" -or -name "installscript.js" \) -exec sed -i "s|msys${_bitness}|msys@BITNESS@|g" "{}" \;
+  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" -or -name "installscript.js" \) -exec sed -i "s|${_bitness}-bit|@BITNESS@-bit|g" "{}" \;
+  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" -or -name "installscript.js" \) -exec sed -i "s|if (\"@BITNESS@-bit\" === \"@BITNESS@-bit\")|if (\"@BITNESS@-bit\" === \"32-bit\")|g" "{}" \;
+}
+
+trap exit_with_undo 0 1 2 15
+
+create_chroot_system() {
+  [ -d ${_newmsysbase} ] && rm -rf ${_newmsysbase}
+  mkdir -p "${_newmsys}"
+  pushd "${_newmsys}" > /dev/null
+
+  mkdir -p var/lib/pacman
+  mkdir -p var/log
+  mkdir -p tmp
+
+  if [ ! -f "${_thisdir}/${_archive_msys64_base}" ]; then
+    exit_cleanly "1" "failed to find '${_thisdir}/${_archive_msys64_base}' (newmsys2)"
+  fi
+
+  eval "/usr/bin/tar -mxvpf \"${_thisdir}/${_archive_msys64_base}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a "${_log}"
+  _result=$?
+  if [ "${_result}" -ne "0" ]; then
+    exit_cleanly "1" "failed to create newmsys2"
+  fi
+
+  popd > /dev/null
+}
+
 do_create_dirs() {
   /usr/bin/rm -r -f "${_newmsys}/opt/x-tools"
   /usr/bin/mkdir -p "${_newmsys}/opt/x-tools"
 
-  /usr/bin/rm -r -f "${_newmsys}/opt/.install-files"
-  /usr/bin/mkdir -p "${_newmsys}/opt/.install-files"
-
+  /usr/bin/rm -r -f "${_newmsys}/opt/emulators"
   /usr/bin/mkdir -p "${_newmsys}/opt/emulators"
+
+  /usr/bin/rm -r -f "${_newmsys}/etc/post-install/dependencies/pip3"
+  /usr/bin/mkdir -p "${_newmsys}/etc/post-install/dependencies/pip3"
 }
 
 do_copy_toolchain() {
-  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/opt/.install-files/tool-chain.tar.bz2"
+  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/tmp/tool-chain.tar.bz2"
 
-  eval "/usr/bin/tar mxvfjp \"${_newmsys}/opt/.install-files/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a "${_log}"
+  eval "/usr/bin/tar mxvfjp \"${_newmsys}/tmp/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a "${_log}"
 }
 
 do_hack_toolchain() {
-  # HACK: Install mkisofs.zip
-  /usr/bin/unzip -d "${_newmsys}/opt/x-tools/sh2eb-elf/bin" "${_newmsys}/opt/.install-files/mkisofs.zip"
+  :
 }
 
 do_install_packages() {
@@ -120,20 +148,22 @@ do_install_packages() {
 }
 
 do_download_other_dependencies() {
-  download_file "1EPnQQ1hIgQ05Laydsrsib4Iz7W_ZSgv8" "${_newmsys}/opt/.install-files/mkisofs.zip"
-  download_file "1r3Cr_l-q6zIwvPLLIdEf-yrSVxuELE6i" "${_newmsys}/opt/.install-files/mednafen-win64.zip"
+  download_file "1r3Cr_l-q6zIwvPLLIdEf-yrSVxuELE6i" "${_newmsys}/tmp/mednafen-win64.zip"
+  download_file "1v5XvgceP8T9nOFdKaVY2RewD3NIoS1Mk" "${_newmsys}/tmp/yabause-win64.zip"
 
-  /usr/bin/pip3 download click -d "${_newmsys}/opt/.install-files/pip3" --no-binary :all:-v 2>&1
+  /usr/bin/pip3 download click -d "${_newmsys}/etc/post-install/dependencies/pip3" --no-binary :all:-v 2>&1
 }
 
 do_setup_emulators() {
   # Extract Mednafen
   /usr/bin/mkdir -p "${_newmsys}/opt/emulators/mednafen"
-  /usr/bin/unzip -d "${_newmsys}/opt/emulators/mednafen" "${_newmsys}/opt/.install-files/mednafen-win64.zip"
+  /usr/bin/unzip -d "${_newmsys}/opt/emulators/mednafen" "${_newmsys}/tmp/mednafen-win64.zip"
   /usr/bin/cp -r ".mednafen" "${_newmsys}/etc/skel/"
 
   # Extract Yabause
   /usr/bin/mkdir -p "${_newmsys}/opt/emulators/yabause"
+  /usr/bin/cp -r ".yabause" "${_newmsys}/etc/skel/"
+  /usr/bin/unzip -d "${_newmsys}/opt/emulators/yabause" "${_newmsys}/tmp/yabause-win64.zip"
 }
 
 do_copy_post_install_script() {
@@ -182,11 +212,13 @@ env | grep 'YAUL' | sort | awk -F= '{ printf "** %-25s = %s\n", \$1, \$2 }'
 
 # Check Mednafen BIOS paths
 if [[ ! -f "\${HOME}/.mednafen/firmware/mpr-17933.bin" ]] &&
-   [[ ! -f "\${HOME}/.mednafen/firmware/sega_101.bin" ]]; then
+   [[ ! -f "\${HOME}/.mednafen/firmware/sega_101.bin" ]] &&
+   [[ ! -f "\${HOME}/.mednafen/mpr-17933.bin" ]] &&
+   [[ ! -f "\${HOME}/.mednafen/sega_101.bin" ]]; then
    printf -- "\
 *\n\
 * Place BIOS \"mpr-17933.bin\" or \"sega_101.bin\" in:\n\
-** %s\n" "\`cygpath -w "\${HOME}/.mednafen/firmware/"\`"
+** %s\n" "\`cygpath -w "\${HOME}/.mednafen/"\`"
 fi
 
 # Check Yabause BIOS paths
@@ -260,9 +292,6 @@ NOCOLOR=1 SILENT=1 /usr/bin/make install-tools
 /usr/bin/rm -r -f /tmp/yaul.build
 EOT
 
-  # HACK: Undo
-  /usr/bin/git checkout tools/Makefile
-
   popd >/dev/null 2>&1
 }
 
@@ -273,21 +302,68 @@ do_seds() {
   undo_commands+=("undo_seds")
 }
 
-undo_seds() {
-  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" \) -exec sed -i "s|<ReleaseDate>${_dateqif}<|<ReleaseDate>@DATE@<|g" "{}" \;
-  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" \) -exec sed -i "s|<Version>${_version}<|<Version>@VERSION@<|g" "{}" \;
-  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" -or -name "installscript.js" \) -exec sed -i "s|msys${_bitness}|msys@BITNESS@|g" "{}" \;
-  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" -or -name "installscript.js" \) -exec sed -i "s|${_bitness}-bit|@BITNESS@-bit|g" "{}" \;
-  find "${_ifwroot}" \( -name "package.xml" -or -name "config.xml" -or -name "installscript.js" \) -exec sed -i "s|if (\"@BITNESS@-bit\" === \"@BITNESS@-bit\")|if (\"@BITNESS@-bit\" === \"32-bit\")|g" "{}" \;
+do_remove_log() {
+  rm -f "${_log}"
 }
 
-create_archives() {
+do_create_chroot_system() {
+  echo "Creating Yaul chroot system ${_newmsys}" | tee -a "${_log}"
+  create_chroot_system
+}
+
+do_remove_previous_installer() {
+  echo "Creating Yaul installer /tmp/${_filename}" | tee -a "${_log}"
+  if [ -f "/tmp/${_filename}" ]; then
+    rm -f "/tmp/${_filename}"
+  fi
+}
+
+do_handle_build_dependencies() {
+  if [ ! -f "${_archivegen}" ]; then
+    eval "pacman -S --noconfirm mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework" | tee -a "${_log}"
+  fi
+
+  if [ ! -f "${_archivegen}" ]; then
+    exit_cleanly "2" "installation of mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework failed. See ${_log}"
+  fi
+
+  if ! [ -f "${_7z}" ]; then
+    eval "pacman -S --noconfirm msys/p7zip" | tee -a "${_log}"
+  fi
+
+  if [ ! -f "${_7z}" ]; then
+    exit_cleanly "2" "installation of p7zip failed. See ${_log}"
+  fi
+
+  if ! [ -f "${_tar}" ]; then
+    eval "pacman -S --noconfirm tar" | tee -a "${_log}"
+  fi
+
+  if [ ! -f "${_tar}" ]; then
+    exit_cleanly "2" "installation of tar failed. See ${_log}"
+  fi
+
+  if ! [ -f "${_git}" ]; then
+    eval "pacman -S --noconfirm git" | tee -a "${_log}"
+  fi
+
+  if [ ! -f "${_git}" ]; then
+    exit_cleanly "2" "installation of git failed. See ${_log}"
+  fi
+}
+
+do_cleanup_tmp_directory() {
+  rm -r -f "${_newmsys}/tmp"
+  /usr/bin/mkdir -p "${_newmsys}/tmp"
+}
+
+do_create_archives() {
   # Collect paths to archive
   local _data="${_ifwroot}"/packages/com.msys2.root.base/data
   [ -d "${_data}" ] && rm -rf "${_data}"
   mkdir -p "${_data}"
   local _dirs=
-  for curr_dir in /etc /opt /var /tmp /usr /mingw32 /mingw64 /msys2_shell.cmd /msys2.exe /mingw32.exe /mingw64.exe /msys2.ini /mingw32.ini /mingw64.ini /msys2.ico /autorebase.bat autorebasebase1st.bat; do
+  for curr_dir in /etc /opt /var /tmp /usr /mingw64 /msys2_shell.cmd /msys2.exe /mingw64.exe /msys2.ini /mingw64.ini /msys2.ico /autorebase.bat autorebasebase1st.bat; do
     if [ -d ${_newmsys}${curr_dir} ] || [ -f ${_newmsys}${curr_dir} ]; then
       _dirs="${_dirs} ${_newmsys}$curr_dir"
     fi
@@ -309,8 +385,7 @@ create_archives() {
   fi
 }
 
-# Add -v to get more information.
-make_installer() {
+do_make_installer() {
   eval "\"${_binarycreator}\" \
     -t \"${_installerbase}\" \
     -p \"${_ifwroot}/packages\" \
@@ -320,74 +395,10 @@ make_installer() {
     -v"  | tee -a "${_log}"
 }
 
-trap exit_with_undo 0 1 2 15
-
-create_chroot_system() {
-  [ -d ${_newmsysbase} ] && rm -rf ${_newmsysbase}
-  mkdir -p "${_newmsys}"
-  pushd "${_newmsys}" > /dev/null
-
-  mkdir -p var/lib/pacman
-  mkdir -p var/log
-  mkdir -p tmp
-
-  if [ ! -f "${_thisdir}/${_archive_msys64_base}" ]; then
-    exit_cleanly "1" "failed to find '${_thisdir}/${_archive_msys64_base}' (newmsys2)"
-  fi
-
-  eval "/usr/bin/tar -mxvpf \"${_thisdir}/${_archive_msys64_base}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a "${_log}"
-  _result=$?
-  if [ "${_result}" -ne "0" ]; then
-    exit_cleanly "1" "failed to create newmsys2"
-  fi
-
-  popd > /dev/null
-}
-
-if [ ! -f "${_archivegen}" ]; then
-  eval "pacman -S --noconfirm mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework" | tee -a "${_log}"
-fi
-
-if [ ! -f "${_archivegen}" ]; then
-  exit_cleanly "2" "installation of mingw${_bitness}/mingw-w64-${_arch}-qt-installer-framework failed. See ${_log}"
-fi
-
-if ! [ -f "${_7z}" ]; then
-  eval "pacman -S --noconfirm msys/p7zip" | tee -a "${_log}"
-fi
-
-if [ ! -f "${_7z}" ]; then
-  exit_cleanly "2" "installation of p7zip failed. See ${_log}"
-fi
-
-if ! [ -f "${_tar}" ]; then
-  eval "pacman -S --noconfirm tar" | tee -a "${_log}"
-fi
-
-if [ ! -f "${_tar}" ]; then
-  exit_cleanly "2" "installation of tar failed. See ${_log}"
-fi
-
-if ! [ -f "${_git}" ]; then
-  eval "pacman -S --noconfirm git" | tee -a "${_log}"
-fi
-
-if [ ! -f "${_git}" ]; then
-  exit_cleanly "2" "installation of git failed. See ${_log}"
-fi
-
-if [ -f "${_log}" ]; then
-  rm -f "${_log}"
-fi
-
-echo "Creating Yaul chroot system ${_newmsys}" | tee -a "${_log}"
-create_chroot_system
-
-echo "Creating Yaul installer /tmp/${_filename}" | tee -a "${_log}"
-if [ -f "/tmp/${_filename}" ]; then
-  rm -f "/tmp/${_filename}"
-fi
-
+do_remove_log
+do_handle_build_dependencies
+do_create_chroot_system
+do_remove_previous_installer
 do_create_dirs
 do_copy_toolchain
 do_seds
@@ -401,6 +412,8 @@ do_install_packages
 do_download_other_dependencies
 do_setup_emulators
 do_hack_toolchain
-create_archives
-make_installer
+do_cleanup_tmp_directory
+do_create_archives
+do_make_installer
+
 exit_cleanly "0" "All done, see \"${_filename}\""

@@ -24,7 +24,7 @@ PACMAN_PACKAGES=(
 }
 
 # Install pip dependencies
-/usr/bin/pip3 install /opt/.install-files/pip3/*.whl >/dev/null 2>&1 || true
+/usr/bin/pip3 install /etc/post-install/dependencies/pip3/*.whl >/dev/null 2>&1 || true
 
 unset PACMAN_PACKAGES
 }
