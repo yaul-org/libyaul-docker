@@ -18,13 +18,7 @@ function createShortcuts()
     }
 
     var cmdLocation = installer.value("TargetDir") + "\\msys2_shell.cmd";
-    component.addOperation("CreateShortcut", cmdLocation, "@StartMenuDir@/MSYS2 MinGW @BITNESS@-bit.lnk", "-mingw64");
-    component.addOperation("CreateShortcut", cmdLocation, "@StartMenuDir@/MSYS2 MSYS.lnk", "-msys");
-
-    if ("@BITNESS@-bit" === "32-bit") {
-        component.addOperation("Execute",
-                               ["@TargetDir@\\autorebase.bat"]);
-    }
+    component.addOperation("CreateShortcut", cmdLocation, "@StartMenuDir@/Yaul (MinGW @BITNESS@).lnk", "-mingw64");
 
     component.addOperation("Execute",
                            ["@TargetDir@\\usr\\bin\\bash.exe", "--login", "-c", "exit"]);
