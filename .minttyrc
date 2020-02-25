@@ -1,0 +1,11 @@
+ThemeFile=rosipov
+Transparency=low
+OpaqueWhenFocused=no
+CursorType=block
+Font=Consolas
+FontHeight=12
+BoldAsFont=no
+BellTaskbar=yes
+Scrollbar=none
+AllowBlinking=yes
+FontSmoothing=default
