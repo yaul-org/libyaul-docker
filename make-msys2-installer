@@ -99,6 +99,8 @@ do_create_dirs() {
 
   /usr/bin/rm -r -f "${_newmsys}/opt/.install-files"
   /usr/bin/mkdir -p "${_newmsys}/opt/.install-files"
+
+  /usr/bin/mkdir -p "${_newmsys}/opt/emulators"
 }
 
 do_copy_toolchain() {
@@ -118,8 +120,19 @@ do_install_packages() {
 
 do_download_other_dependencies() {
   download_file "1EPnQQ1hIgQ05Laydsrsib4Iz7W_ZSgv8" "${_newmsys}/opt/.install-files/mkisofs.zip"
+  download_file "1r3Cr_l-q6zIwvPLLIdEf-yrSVxuELE6i" "${_newmsys}/opt/.install-files/mednafen-win64.zip"
 
   /usr/bin/pip3 download click -d "${_newmsys}/opt/.install-files/pip3" --no-binary :all:-v 2>&1
+}
+
+do_setup_emulators() {
+  # Extract Mednafen
+  /usr/bin/mkdir -p "${_newmsys}/opt/emulators/mednafen"
+  /usr/bin/unzip -d "${_newmsys}/opt/emulators/mednafen" "${_newmsys}/opt/.install-files/mednafen-win64.zip"
+  /usr/bin/cp -r ".mednafen" "${_newmsys}/etc/skel/"
+
+  # Extract Yabause
+  /usr/bin/mkdir -p "${_newmsys}/opt/emulators/yabause"
 }
 
 do_copy_post_install_script() {
@@ -151,17 +164,37 @@ _lines=\`tput lines\`
 
 printf -- "*%.0s" \`seq 1 \${_cols}\`
 
-printf -- "* Paths\n\
-**   Examples: /opt/libyaul/examples\n\
-**      Tools: /opt/libyaul/tools\n\
-** Tool-chain: $YAUL_INSTALL_ROOT\n\
+printf -- "\
+* Paths\n\
+**      Examples: /opt/libyaul/examples\n\
+** Documentation: /opt/libyaul/docs\n\
+**         Tools: /opt/libyaul/tools\n\
+**\n\
+* Emulators\n\
+**   Mednafen: /opt/emulators/mednafen\n\
+**    Yabause: /opt/emulators/yabause\n\
 *\n"
 
 printf -- "* Environment variables\n"
-# _envs=\$(env | grep 'YAUL' | sort)
-# _max_line=\`printf -- "\${_envs}\n" | sed -E 's/([^=]+)=.*$/\1/g' | wc -L\`
 
 env | grep 'YAUL' | sort | awk -F= '{ printf "** %-25s = %s\n", \$1, \$2 }'
+
+# Check Mednafen BIOS paths
+if [[ ! -f "\${HOME}/.mednafen/firmware/mpr-17933.bin" ]] &&
+   [[ ! -f "\${HOME}/.mednafen/firmware/sega_101.bin" ]]; then
+   printf -- "\
+*\n\
+* Place BIOS \"mpr-17933.bin\" or \"sega_101.bin\" in:\n\
+** %s\n" "\`cygpath -w "\${HOME}/.mednafen/firmware/"\`"
+fi
+
+# Check Yabause BIOS paths
+if [[ ! -f "\${HOME}/.yabause/firmware/sega_101.bin" ]]; then
+   printf -- "\
+*\n\
+* Place BIOS \"sega_101.bin\" in:\n\
+** %s\n" "\`cygpath -w "\${HOME}/.yabause/"\`"
+fi
 
 printf -- "*%.0s" \`seq 1 \${_cols}\`
 
@@ -180,6 +213,8 @@ do_setup_bashrc() {
 
   # Update PATH
   export PATH="${YAUL_INSTALL_ROOT}/bin:${PATH}"
+  export PATH="/opt/emulators/mednafen:${PATH}"
+  export PATH="/opt/emulators/yabause:${PATH}"
 
   # Show MOTD
   [ -e ".hushlogin" ] || (source /etc/motd.tail 2>/dev/null || true)
@@ -363,7 +398,8 @@ do_create_motd
 do_build_yaul
 do_install_packages
 do_download_other_dependencies
+do_setup_emulators
 do_hack_toolchain
 create_archives
 make_installer
-exit_cleanly "0" "All done, see ${_filename}"
+exit_cleanly "0" "All done, see \"${_filename}\""
