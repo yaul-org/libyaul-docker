@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Installer>
-    <Name>Yaul (MSYS2) @BITNESS@-bit</Name>
+    <Name>Yaul (MSYS2)</Name>
     <Version>@VERSION@</Version>
-    <Title>Yaul (MSYS2) @BITNESS@-bit</Title>
+    <Title>Yaul (MSYS2)</Title>
     <Publisher>Israel Jacquez</Publisher>
-    <StartMenuDir>Yaul (MSYS2) @BITNESS@-bit</StartMenuDir>
+    <StartMenuDir>Yaul</StartMenuDir>
     <RunProgram>@TargetDir@/msys2_shell.cmd</RunProgram>
-    <RunProgramArguments></RunProgramArguments>
+    <RunProgramArguments>-mingw64</RunProgramArguments>
     <InstallerApplicationIcon>../../msys2</InstallerApplicationIcon>
     <InstallerWindowIcon>../../msys2</InstallerWindowIcon>
 </Installer>
