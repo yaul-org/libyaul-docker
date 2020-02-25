@@ -18,7 +18,7 @@ function createShortcuts()
     }
 
     var cmdLocation = installer.value("TargetDir") + "\\msys2_shell.cmd";
-    component.addOperation("CreateShortcut", cmdLocation, "@StartMenuDir@/Yaul (MinGW 64).lnk", "-mingw64");
+    component.addOperation("CreateShortcut", cmdLocation, "@StartMenuDir@/Yaul.lnk", "-mingw64", "iconPath=@TargetDir@/mingw64.exe");
 
     component.addOperation("Execute",
                            ["@TargetDir@\\usr\\bin\\bash.exe", "--login", "-c", "exit"]);
