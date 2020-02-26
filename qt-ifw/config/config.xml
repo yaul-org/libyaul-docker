@@ -7,6 +7,6 @@
     <StartMenuDir>Yaul</StartMenuDir>
     <RunProgram>@TargetDir@/msys2_shell.cmd</RunProgram>
     <RunProgramArguments>-mingw64</RunProgramArguments>
-    <InstallerApplicationIcon>../../msys2</InstallerApplicationIcon>
-    <InstallerWindowIcon>../../msys2</InstallerWindowIcon>
+    <InstallerApplicationIcon>../../yaul</InstallerApplicationIcon>
+    <InstallerWindowIcon>../../yaul</InstallerWindowIcon>
 </Installer>
