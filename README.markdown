@@ -15,9 +15,9 @@ Yet Another Useless [Saturn] Library Installer
 
 3. Select the installation path and click _Next_
 
-![Step 3](/.images/step_02.png)
-
 You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` will result in Yaul not working.
+
+![Step 3](/.images/step_02.png)
 
 4. Name menu shortcuts and click _Next_
 
