@@ -86,3 +86,5 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 8. Success! :tada:
 
 ![Step 8](/.images/step_15.png)
+
+[1]: https://github.com/ijacquez/libyaul-installer/releases
