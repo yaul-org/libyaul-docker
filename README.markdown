@@ -35,7 +35,7 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 ![Step 7](/.images/step_06.png)
 
-8. All done!
+8. All done! :tada:
 
 ![Step 8](/.images/step_07.png)
 
@@ -69,6 +69,6 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 ![Step 7](/.images/step_14.png)
 
-8. Success!
+8. Success! :tada:
 
 ![Step 8](/.images/step_15.png)
