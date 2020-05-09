@@ -11,64 +11,64 @@ Yet Another Useless [Saturn] Library Installer
 
 2. Open the installer and click _Next_
 
-![Step 2](.images/step-01.png?raw=true)
+![Step 2](/.images/step_01.png)
 
 3. Select the installation path and click _Next_
 
-![Step 3](.images/step-02.png?raw=true)
+![Step 3](/.images/step_02.png)
 
 You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` will result in Yaul not working.
 
 4. Name menu shortcuts and click _Next_
 
-![Step 4](.images/step-03.png?raw=true)
+![Step 4](/.images/step_03.png)
 
 5. Wait until installation is done
 
-![Step 5](.images/step-04.png?raw=true)
+![Step 5](/.images/step_04.png)
 
 6. Installation is done. Click _Next_
 
-![Step 6](.images/step-05.png?raw=true)
+![Step 6](/.images/step_05.png)
 
 7. Click _Finish_ to complete the installation
 
-![Step 7](.images/step-06.png?raw=true)
+![Step 7](/.images/step_06.png)
 
 8. All done!
 
-![Step 8](.images/step-07.png?raw=true)
+![Step 8](/.images/step_07.png)
 
 ## Update Yaul
 
 1. Open a terminal and type the following.
 
-![Step 1](.images/step-08.png?raw=true)
+![Step 1](/.images/step_08.png)
 
 2. Update the submodules
 
-![Step 2](.images/step-09.png?raw=true)
+![Step 2](/.images/step_09.png)
 
 3. Clean and build the library
 
-![Step 3](.images/step-10.png?raw=true)
+![Step 3](/.images/step_10.png)
 
 4. Wait until build and installation is done
 
-![Step 4](.images/step-11.png?raw=true)
+![Step 4](/.images/step_11.png)
 
 5. All done building!
 
-![Step 5](.images/step-12.png?raw=true)
+![Step 5](/.images/step_12.png)
 
 6. Build `vdp1-balls` as a test
 
-![Step 6](.images/step-13.png?raw=true)
+![Step 6](/.images/step_13.png)
 
 7. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
 
-![Step 7](.images/step-14.png?raw=true)
+![Step 7](/.images/step_14.png)
 
 8. Success!
 
-![Step 8](.images/step-15.png?raw=true)
+![Step 8](/.images/step_15.png)
