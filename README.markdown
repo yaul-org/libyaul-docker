@@ -41,15 +41,23 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 ## Update Yaul
 
-1. Open a terminal and type the following.
+1. Open a terminal and type the following
+
+       cd /opt/libyaul
+       git pull
 
 ![Step 1](/.images/step_08.png)
 
 2. Update the submodules
 
+       git submodule update -f
+
 ![Step 2](/.images/step_09.png)
 
 3. Clean and build the library
+
+       make libyaul-clean-release
+       SILENT=1 make libyaul-install-release
 
 ![Step 3](/.images/step_10.png)
 
@@ -63,9 +71,15 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 6. Build `vdp1-balls` as a test
 
+       cd /opt/libyaul/examples/vdp1-balls
+       SILENT=1 make clean
+       SILENT=1 make
+
 ![Step 6](/.images/step_13.png)
 
 7. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
+
+       mednafen vdp1-balls.cue
 
 ![Step 7](/.images/step_14.png)
 
