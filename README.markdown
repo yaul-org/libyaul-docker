@@ -2,7 +2,7 @@ Yet Another Useless [Saturn] Library Installer
 ===
 
 <p align="center">
-  <img width="512" height="512" src=".images/yaul-installer.png">
+  <img width="256" height="256" src=".images/yaul-installer.png">
 </p>
 
 ## Installation
