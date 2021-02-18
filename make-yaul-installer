@@ -2,6 +2,12 @@
 
 set -e
 
+# If left empty, a new base will be fetched
+ARCHIVE_MSYS64_BASE=""
+TOOLCHAIN_ZIP="tool-chain-MinGW-x86_64-20210217.tar.bz2"
+MEDNAFEN_ZIP="mednafen-1.24.0-UNSTABLE-win64.zip"
+YABAUSE_ZIP="yabause-0.9.15-win64.zip"
+
 _thisdir="$(dirname "${0}")"
 test "${_thisdir}" = "." && _thisdir=${PWD}
 _ifwroot="${_thisdir}"/qt-ifw
@@ -20,9 +26,6 @@ _tar="/usr/bin/tar"
 _git="/usr/bin/git"
 _newmsysbase=/tmp/newmsys
 _newmsys=${_newmsysbase}/msys"${_bitness}"
-
-# Hard coded, as it's more stable to have control over which base you're using
-_archive_msys64_base="msys2-base-x86_64-20190524.tar.xz"
 
 _pacman_packages=(
     diffutils
@@ -62,32 +65,17 @@ exit_cleanly() {
 }
 
 download_file() {
-    local _id
-    _id=${1}
+  local _file
+  _file=${1}
 
-    local _file
-    _file=${2}
+  local _out
+  _out=${2}
 
-    rm -r -f /tmp/cookies.txt
+  if ! [ -f "${_file}" ]; then
+      exit_cleanly "1" "unable to load file \"${_file}\""
+  fi
 
-    printf -- "Downloading \"%s\"\n" "${_file}" | tee -a "${_log}"
-
-    local _data
-    _data=$(/usr/bin/wget \
-      --quiet \
-      --save-cookies /tmp/cookies.txt \
-      --keep-session-cookies \
-      --no-check-certificate \
-      'https://drive.google.com/uc?export=download&id='"${_id}" \
-      -O- \
-      | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')
-
-    /usr/bin/wget --force-directories \
-      --load-cookies /tmp/cookies.txt \
-      "https://drive.google.com/uc?export=download&confirm=${_data}&id=${_id}" \
-      -O "${_file}"
-
-    rm -r -f /tmp/cookies.txt
+  cp -r "${_file}" "${_out}"
 }
 
 undo_seds() {
@@ -101,7 +89,7 @@ undo_seds() {
 trap exit_with_undo 0 1 2 15
 
 create_chroot_system() {
-  [ -d ${_newmsysbase} ] && rm -rf ${_newmsysbase}
+  [ -d ${_newmsysbase} ] && rm -r -f ${_newmsysbase}
   mkdir -p "${_newmsys}"
   pushd "${_newmsys}" > /dev/null
 
@@ -109,14 +97,19 @@ create_chroot_system() {
   mkdir -p var/log
   mkdir -p tmp
 
-  if [ ! -f "${_thisdir}/${_archive_msys64_base}" ]; then
-    exit_cleanly "1" "failed to find '${_thisdir}/${_archive_msys64_base}' (newmsys2)"
-  fi
-
-  eval "/usr/bin/tar -mxvpf \"${_thisdir}/${_archive_msys64_base}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a "${_log}"
-  _result=$?
-  if [ "${_result}" -ne "0" ]; then
-    exit_cleanly "1" "failed to create newmsys2"
+  if [ -f "${_thisdir}/${ARCHIVE_MSYS64_BASE}" ]; then
+    eval "/usr/bin/tar -mxvpf \"${_thisdir}/${ARCHIVE_MSYS64_BASE}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a "${_log}"
+    _result=$?
+    if [ "${_result}" -ne "0" ]; then
+      exit_cleanly "1" "failed to create newmsys2"
+    fi
+  else
+    eval "pacman -Syu --root \"${_newmsys}\"" | tee -a "${_log}"
+    eval "pacman -S base --noconfirm --root \"${_newmsys}\"" | tee -a "${_log}"
+    _result=$?
+    if [ "${_result}" -ne "0" ]; then
+      exit_cleanly "1" "failed to create newmsys2 via command 'pacman -S base --noconfirm --root ${_newmsys}'"
+    fi
   fi
 
   popd > /dev/null
@@ -134,7 +127,7 @@ do_create_dirs() {
 }
 
 do_copy_toolchain() {
-  download_file "1hkQ6PKWDM29Xv0ZhJzUBRg0Xvz09UFMI" "${_newmsys}/tmp/tool-chain.tar.bz2"
+  download_file "${TOOLCHAIN_ZIP}" "${_newmsys}/tmp/tool-chain.tar.bz2"
 
   eval "/usr/bin/tar mxvfjp \"${_newmsys}/tmp/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a "${_log}"
 }
@@ -148,8 +141,8 @@ do_install_packages() {
 }
 
 do_download_other_dependencies() {
-  download_file "1r3Cr_l-q6zIwvPLLIdEf-yrSVxuELE6i" "${_newmsys}/tmp/mednafen-win64.zip"
-  download_file "1v5XvgceP8T9nOFdKaVY2RewD3NIoS1Mk" "${_newmsys}/tmp/yabause-win64.zip"
+  download_file "${MEDNAFEN_ZIP}" "${_newmsys}/tmp/mednafen-win64.zip"
+  download_file "${YABAUSE_ZIP}" "${_newmsys}/tmp/yabause-win64.zip"
 
   /usr/bin/pip3 download click -d "${_newmsys}/etc/post-install/dependencies/pip3" --no-binary :all:-v 2>&1
 }
@@ -421,8 +414,8 @@ do_repository_clone
 do_setup_yaul_env
 do_setup_bashrc
 do_create_motd
-do_build_yaul
 do_install_packages
+do_build_yaul
 do_download_other_dependencies
 do_setup_emulators
 do_hack_toolchain
