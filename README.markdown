@@ -65,31 +65,36 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 ![Step 4](/.images/step_11.png)
 
-5. Clean, build, and install the tools
+5. Clean, build, and install the other libraries
+
+       make libtga-clean-release libbcl-clean-release libsega3d-clean-release
+       SILENT=1 make libtga-install-release libbcl-install-release libsega3d-install-release
+
+6. Clean, build, and install the tools
 
        make clean-tools
        SILENT=1 make install-tools
 
-6. All done building!
+7. All done building!
 
-![Step 6](/.images/step_12.png)
+![Step 7](/.images/step_12.png)
 
-7. Build `vdp1-balls` as a test
+8. Build `vdp1-balls` as a test
 
        cd /opt/libyaul/examples/vdp1-balls
        SILENT=1 make clean
        SILENT=1 make
 
-![Step 7](/.images/step_13.png)
+![Step 8](/.images/step_13.png)
 
-8. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
+9. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
 
        mednafen vdp1-balls.cue
 
-![Step 8](/.images/step_14.png)
+![Step 9](/.images/step_14.png)
 
-9. Success! :tada:
+10. Success! :tada:
 
-![Step 9](/.images/step_15.png)
+![Step 10](/.images/step_15.png)
 
 [1]: https://github.com/ijacquez/libyaul-installer/releases
