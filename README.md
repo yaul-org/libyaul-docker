@@ -65,6 +65,6 @@ mednafen vdp1-balls.cue
 
 6. Success! :tada:
 
-![Results](/.images/step_15.png)
+![Results](/.images/results.png)
 
 [1]: https://github.com/ijacquez/libyaul-installer/releases
