@@ -65,26 +65,31 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 ![Step 4](/.images/step_11.png)
 
-5. All done building!
+5. Clean, build, and install the tools
 
-![Step 5](/.images/step_12.png)
+       make clean-tools
+       SILENT=1 make install-tools
 
-6. Build `vdp1-balls` as a test
+6. All done building!
+
+![Step 6](/.images/step_12.png)
+
+7. Build `vdp1-balls` as a test
 
        cd /opt/libyaul/examples/vdp1-balls
        SILENT=1 make clean
        SILENT=1 make
 
-![Step 6](/.images/step_13.png)
+![Step 7](/.images/step_13.png)
 
-7. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
+8. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
 
        mednafen vdp1-balls.cue
 
-![Step 7](/.images/step_14.png)
+![Step 8](/.images/step_14.png)
 
-8. Success! :tada:
+9. Success! :tada:
 
-![Step 8](/.images/step_15.png)
+![Step 9](/.images/step_15.png)
 
 [1]: https://github.com/ijacquez/libyaul-installer/releases
