@@ -11,45 +11,29 @@ Yet Another Useless [Saturn] Library Installer
 
 2. Open the installer and click _Next_
 
-![Step 2](/.images/step_01.png)
-
 3. Select the installation path and click _Next_
 
 You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul`
 will result in Yaul not working.
 
-![Step 3](/.images/step_02.png)
-
 4. Name menu shortcuts and click _Next_
-
-![Step 4](/.images/step_03.png)
 
 5. Wait until installation is done
 
-![Step 5](/.images/step_04.png)
-
 6. Installation is done. Click _Next_
-
-![Step 6](/.images/step_05.png)
 
 7. Click _Finish_ to complete the installation
 
-![Step 7](/.images/step_06.png)
-
 8. All done! :tada:
-
-![Step 8](/.images/step_07.png)
 
 ## Update Yaul
 
-1. Open a terminal and type the following
+1. Open a terminal (for example, `C:\yaul\mingw64.exe`) and type the following
 
 ```
 cd /opt/libyaul
 git pull
 ```
-
-![Step 1](/.images/step_08.png)
 
 2. Update the submodules
 
@@ -57,24 +41,14 @@ git pull
 git submodule update -f
 ```
 
-![Step 2](/.images/step_09.png)
-
-3. Clean and build the libraries and tools
+3. Clean, build, and install the libraries and tools
 
 ```
 make clean
 SILENT=1 make install
 ```
 
-![Step 3](/.images/step_10.png)
-
-4. Wait until build and installation is done
-
-![Step 4](/.images/step_11.png)
-
-5. All done building!
-
-6. Build `vdp1-balls` as a test
+4. Build `vdp1-balls` as a test
 
 ```
 cd /opt/libyaul/examples/vdp1-balls
@@ -82,19 +56,15 @@ SILENT=1 make clean
 SILENT=1 make
 ```
 
-![Step 6](/.images/step_13.png)
-
-7. If you copied over a copy of the BIOS over to the correct paths, you can run
+5. If you copied over a copy of the BIOS over to the correct paths, you can run
    Mednafen or Yabause
 
 ```
 mednafen vdp1-balls.cue
 ```
 
-![Step 7](/.images/step_14.png)
+6. Success! :tada:
 
-8. Success! :tada:
-
-![Step 8](/.images/step_15.png)
+![Results](/.images/step_15.png)
 
 [1]: https://github.com/ijacquez/libyaul-installer/releases
