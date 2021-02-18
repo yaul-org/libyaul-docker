@@ -77,8 +77,6 @@ You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` 
 
 7. All done building!
 
-![Step 7](/.images/step_12.png)
-
 8. Build `vdp1-balls` as a test
 
        cd /opt/libyaul/examples/vdp1-balls
