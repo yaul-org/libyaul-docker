@@ -15,7 +15,8 @@ Yet Another Useless [Saturn] Library Installer
 
 3. Select the installation path and click _Next_
 
-You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul` will result in Yaul not working.
+You must choose a path with no spaces. For example, `C:\John Doe\Projects\Yaul`
+will result in Yaul not working.
 
 ![Step 3](/.images/step_02.png)
 
@@ -58,11 +59,11 @@ git submodule update -f
 
 ![Step 2](/.images/step_09.png)
 
-3. Clean and build the library
+3. Clean and build the libraries and tools
 
 ```
-make libyaul-clean-release
-SILENT=1 make libyaul-install-release
+make clean
+SILENT=1 make install
 ```
 
 ![Step 3](/.images/step_10.png)
@@ -71,23 +72,9 @@ SILENT=1 make libyaul-install-release
 
 ![Step 4](/.images/step_11.png)
 
-5. Clean, build, and install the other libraries
+5. All done building!
 
-```
-make libtga-clean-release libbcl-clean-release libsega3d-clean-release
-SILENT=1 make libtga-install-release libbcl-install-release libsega3d-install-release
-```
-
-6. Clean, build, and install the tools
-
-```
-make clean-tools
-SILENT=1 make install-tools
-```
-
-7. All done building!
-
-8. Build `vdp1-balls` as a test
+6. Build `vdp1-balls` as a test
 
 ```
 cd /opt/libyaul/examples/vdp1-balls
@@ -95,18 +82,19 @@ SILENT=1 make clean
 SILENT=1 make
 ```
 
-![Step 8](/.images/step_13.png)
+![Step 6](/.images/step_13.png)
 
-9. If you copied over a copy of the BIOS over to the correct paths, you can run Mednafen or Yabause
+7. If you copied over a copy of the BIOS over to the correct paths, you can run
+   Mednafen or Yabause
 
 ```
 mednafen vdp1-balls.cue
 ```
 
-![Step 9](/.images/step_14.png)
+![Step 7](/.images/step_14.png)
 
-10. Success! :tada:
+8. Success! :tada:
 
-![Step 10](/.images/step_15.png)
+![Step 8](/.images/step_15.png)
 
 [1]: https://github.com/ijacquez/libyaul-installer/releases
