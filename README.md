@@ -67,4 +67,12 @@ mednafen vdp1-balls.cue
 
 ![Results](/.images/results.png)
 
+## Installer development
+
+### Requirements
+
+Verify that the following packages are installed.
+
+- `mingw-w64-x86_64-qt-installer-framework`
+
 [1]: https://github.com/ijacquez/libyaul-installer/releases
