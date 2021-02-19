@@ -90,12 +90,12 @@ trap exit_with_undo 0 1 2 15
 
 create_chroot_system() {
   [ -d ${_newmsysbase} ] && rm -r -f ${_newmsysbase}
-  mkdir -p "${_newmsys}"
+  /usr/bin/mkdir -p "${_newmsys}"
   pushd "${_newmsys}" > /dev/null
 
-  mkdir -p var/lib/pacman
-  mkdir -p var/log
-  mkdir -p tmp
+  /usr/bin/mkdir -p var/lib/pacman
+  /usr/bin/mkdir -p var/log
+  /usr/bin/mkdir -p tmp
 
   if [ -f "${_thisdir}/${ARCHIVE_MSYS64_BASE}" ]; then
     eval "/usr/bin/tar -mxvpf \"${_thisdir}/${ARCHIVE_MSYS64_BASE}\" -C \"${_newmsysbase}/\"" 2>&1 | tee -a "${_log}"
@@ -160,7 +160,7 @@ do_setup_emulators() {
 }
 
 do_copy_post_install_script() {
-  mkdir -p "${_newmsys}/etc/post-install"
+  /usr/bin/mkdir -p "${_newmsys}/etc/post-install"
   cp -v -f "${_thisdir}/scripts/install.sh" "${_newmsys}/etc/post-install/09-yaul-install.post"
 }
 
@@ -171,7 +171,7 @@ do_copy_skel_files() {
 do_repository_clone() {
   pushd . >/dev/null 2>&1
 
-  mkdir -p "${_newmsys}/opt"
+  /usr/bin/mkdir -p "${_newmsys}/opt"
   cd "${_newmsys}/opt"
   if [ ! -d "libyaul" ]; then
     /usr/bin/git clone "https://github.com/ijacquez/libyaul.git"
@@ -367,7 +367,7 @@ do_create_archives() {
   # Collect paths to archive
   local _data="${_ifwroot}"/packages/com.msys2.root.base/data
   [ -d "${_data}" ] && rm -rf "${_data}"
-  mkdir -p "${_data}"
+  /usr/bin/mkdir -p "${_data}"
   local _dirs=
   for curr_dir in /etc /opt /var /tmp /usr /mingw64 /msys2_shell.cmd /msys2.exe /mingw64.exe /msys2.ini /mingw64.ini /msys2.ico /autorebase.bat autorebasebase1st.bat; do
     if [ -d ${_newmsys}${curr_dir} ] || [ -f ${_newmsys}${curr_dir} ]; then
