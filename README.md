@@ -1,9 +1,9 @@
 Yet Another Useless [Saturn] Library Installer
 ===
 
-<p align="center">
-  <img width="256" height="256" src=".images/yaul-installer.png">
-</p>
+Simple [script](make-yaul-installer) to setup a new MSYS2 environment. The
+installer framework is based on
+[msys2-installer](https://github.com/msys2/msys2-installer).
 
 ## Installation
 
@@ -78,3 +78,9 @@ Verify that the following packages are installed.
 - `mingw-w64-x86_64-qt-installer-framework`
 
 [1]: https://github.com/ijacquez/libyaul-installer/releases
+
+### Building the installer package
+
+``` sh
+./make-yaul-installer
+```
