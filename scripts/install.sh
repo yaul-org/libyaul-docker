@@ -5,7 +5,6 @@ PACMAN_PACKAGES=(
     gcc
     git
     make
-    mingw-w64-x86_64-libftdi
     p7zip
     patch
     pkg-config
