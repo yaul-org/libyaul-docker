@@ -65,7 +65,9 @@ mednafen vdp1-balls.cue
 
 6. Success! :tada:
 
-![Results](/.images/results.png)
+<p align="center">
+  <img src=".images/results.png" alt="Balls!">
+</p>
 
 ## Installer development
 
