@@ -4,9 +4,6 @@ set -e
 
 # If left empty, a new base will be fetched
 ARCHIVE_MSYS64_BASE_TARBALL=""
-TOOLCHAIN_TARBALL="tool-chain-MinGW-x86_64-20210217.tar.bz2"
-MEDNAFEN_ZIP="mednafen-1.24.0-UNSTABLE-win64.zip"
-YABAUSE_ZIP="yabause-0.9.15-win64.zip"
 
 # Paths and files
 ARCHIVE_EXPORT=(
@@ -30,21 +27,11 @@ ARCHIVE_EXPORT=(
 
 # Packages to download (and later install)
 PACMAN_PACKAGES=(
-    diffutils
-    dos2unix
-    gcc
-    git
-    make
-    p7zip
-    patch
-    pkg-config
-    python3
-    python3-pip
-    tar
-    unzip
-    wget
-    xorriso
-    zip
+  mingw-w64-x86_64-yaul-tool-chain
+  mingw-w64-x86_64-yaul-git
+  mingw-w64-x86_64-yaul-emulator-yabause
+  mingw-w64-x86_64-yaul-emulator-mednafen 
+  yaul-examples-git
 )
 
 _thisdir="$(dirname "${0}")"
@@ -137,47 +124,16 @@ create_chroot_system() {
 }
 
 do_create_dirs() {
-  /usr/bin/rm -r -f "${_newmsys}/opt/x-tools"
-  /usr/bin/mkdir -p "${_newmsys}/opt/x-tools"
-
-  /usr/bin/rm -r -f "${_newmsys}/opt/emulators"
-  /usr/bin/mkdir -p "${_newmsys}/opt/emulators"
-
-  /usr/bin/rm -r -f "${_newmsys}/etc/post-install/dependencies/pip3"
-  /usr/bin/mkdir -p "${_newmsys}/etc/post-install/dependencies/pip3"
-}
-
-do_copy_toolchain() {
-  download_file "${TOOLCHAIN_TARBALL}" "${_newmsys}/tmp/tool-chain.tar.bz2"
-
-  eval "/usr/bin/tar mxvfjp \"${_newmsys}/tmp/tool-chain.tar.bz2\" -C \"${_newmsys}/opt/x-tools\"" 2>&1 | tee -a "${_log}"
-}
-
-do_hack_toolchain() {
   :
 }
 
-do_install_packages() {
+do_download_packages() {
   /usr/bin/pacman -Sw ${PACMAN_PACKAGES[@]} --noconfirm --config "pacman.conf" > /tmp/download.lst
 }
 
-do_download_other_dependencies() {
-  download_file "${MEDNAFEN_ZIP}" "${_newmsys}/tmp/mednafen-win64.zip"
-  download_file "${YABAUSE_ZIP}" "${_newmsys}/tmp/yabause-win64.zip"
-
-  /usr/bin/pip3 download click -d "${_newmsys}/etc/post-install/dependencies/pip3" --no-binary :all:-v 2>&1
-}
-
 do_setup_emulators() {
-  # Extract Mednafen
-  /usr/bin/mkdir -p "${_newmsys}/opt/emulators/mednafen"
-  /usr/bin/unzip -d "${_newmsys}/opt/emulators/mednafen" "${_newmsys}/tmp/mednafen-win64.zip"
   /usr/bin/cp -r ".mednafen" "${_newmsys}/etc/skel/"
-
-  # Extract Yabause
-  /usr/bin/mkdir -p "${_newmsys}/opt/emulators/yabause"
   /usr/bin/cp -r ".yabause" "${_newmsys}/etc/skel/"
-  /usr/bin/unzip -d "${_newmsys}/opt/emulators/yabause" "${_newmsys}/tmp/yabause-win64.zip"
 }
 
 do_change_icon() {
@@ -186,26 +142,11 @@ do_change_icon() {
 
 do_copy_post_install_script() {
   /usr/bin/mkdir -p "${_newmsys}/etc/post-install"
-  cp -v -f "${_thisdir}/scripts/install.sh" "${_newmsys}/etc/post-install/09-yaul-install.post"
+  cp -v -f "${_thisdir}/scripts/09-yaul-install.post" "${_newmsys}/etc/post-install/09-yaul-install.post"
 }
 
 do_copy_skel_files() {
   /usr/bin/cp -r ".minttyrc" "${_newmsys}/etc/skel/"
-}
-
-do_repository_clone() {
-  pushd . >/dev/null 2>&1
-
-  /usr/bin/mkdir -p "${_newmsys}/opt"
-  cd "${_newmsys}/opt"
-  if [ ! -d "libyaul" ]; then
-    /usr/bin/git clone "https://github.com/ijacquez/libyaul.git"
-  fi
-  cd "${_newmsys}/opt/libyaul"
-  /usr/bin/git submodule init
-  /usr/bin/git submodule update -f
-
-  popd >/dev/null 2>&1
 }
 
 do_create_motd() {
@@ -219,42 +160,57 @@ printf -- "*%.0s" \`seq 1 \${_cols}\`
 
 printf -- "\
 * Paths\n\
-**      Examples: /opt/libyaul/examples\n\
-** Documentation: /opt/libyaul/docs\n\
-**         Tools: /opt/libyaul/tools\n\
+**    Tool-chain: /opt/tool-chains/sh2eb-elf\n\
+**      Examples: /opt/yaul-examples\n\
 **\n\
-* Emulators\n\
-**   Mednafen: /opt/emulators/mednafen\n\
-**    Yabause: /opt/emulators/yabause\n\
-*\n"
+* Emulators\n"
+if [ -d "/opt/emulators/mednafen" ]; then
+    printf -- "**   Mednafen: /opt/emulators/mednafen\n"
+fi
+if [ -d "/opt/emulators/yabause" ]; then
+    printf -- "**    Yabause: /opt/emulators/yabause\n"
+fi
+printf -- "*\n"
 
 printf -- "* Environment variables\n"
 
 env | grep 'YAUL' | sort | awk -F= '{ printf "** %-25s = %s\n", \$1, \$2 }'
 
 # Check Mednafen BIOS paths
-if [[ ! -f "\${HOME}/.mednafen/firmware/mpr-17933.bin" ]] &&
-   [[ ! -f "\${HOME}/.mednafen/firmware/sega_101.bin" ]] &&
-   [[ ! -f "\${HOME}/.mednafen/mpr-17933.bin" ]] &&
-   [[ ! -f "\${HOME}/.mednafen/sega_101.bin" ]]; then
-   printf -- "\
-*\n\
-* Place BIOS \"mpr-17933.bin\" or \"sega_101.bin\" in:\n\
-** %s\n" "\`cygpath -w "\${HOME}/.mednafen/"\`"
+if [ -d "/opt/emulators/mednafen" ]; then
+    if [[ ! -f "\${HOME}/.mednafen/firmware/mpr-17933.bin" ]] &&
+       [[ ! -f "\${HOME}/.mednafen/firmware/sega_101.bin" ]] &&
+       [[ ! -f "\${HOME}/.mednafen/mpr-17933.bin" ]] &&
+       [[ ! -f "\${HOME}/.mednafen/sega_101.bin" ]]; then
+        printf -- "\
+    *\n\
+    * Place BIOS \"mpr-17933.bin\" or \"sega_101.bin\" in:\n\
+    ** %s\n" "\`cygpath -w "\${HOME}/.mednafen/"\`"
+    fi
 fi
 
 # Check Yabause BIOS paths
-if [[ ! -f "\${HOME}/.yabause/sega_101.bin" ]]; then
-   printf -- "\
-*\n\
-* Place BIOS \"sega_101.bin\" in:\n\
-** %s\n" "\`cygpath -w "\${HOME}/.yabause/"\`"
+if [ -d "/opt/emulators/yabause" ]; then
+    if [[ ! -f "\${HOME}/.yabause/sega_101.bin" ]]; then
+       printf -- "\
+    *\n\
+    * Place BIOS \"sega_101.bin\" in:\n\
+    ** %s\n" "\`cygpath -w "\${HOME}/.yabause/"\`"
+    fi
 fi
 
 printf -- "*%.0s" \`seq 1 \${_cols}\`
 
 unset _cols
 unset _lines
+EOF
+}
+
+do_modify_pacman() {
+  cat >> "${_newmsys}/etc/pacman.conf" <<EOF
+[yaul-packages]
+SigLevel = Optional TrustAll
+Server = http://packages.yaul.org/mingw64-repo/x86_64
 EOF
 }
 
@@ -270,60 +226,22 @@ do_setup_bashrc() {
 
 # Begin Yaul customization {
   # Set up environment
-  source "${HOME}/.yaul.env"
+  if [ -f "${HOME}/.yaul.env" ]; then
+    source "${HOME}/.yaul.env"
 
-  # Update PATH
-  export PATH="${YAUL_INSTALL_ROOT}/bin:${PATH}"
-  export PATH="/opt/emulators/mednafen:${PATH}"
-  export PATH="/opt/emulators/yabause:${PATH}"
+    # Update PATH
+    export PATH="${YAUL_INSTALL_ROOT}/bin:${PATH}"
+    export PATH="/opt/emulators/mednafen:${PATH}"
+    export PATH="/opt/emulators/yabause:${PATH}"
+
+    # Show MOTD
+    [ -e "${HOME}/.hushlogin" ] || (source /etc/motd.tail 2>/dev/null || true)
+  fi
 
   # Update PS1 to something more modest
   export PS1="\[\e[1;32m\]\u@\[\e[1;33m\]\h\[\e[0m\]\$ "
-
-  # Show MOTD
-  [ -e "${HOME}/.hushlogin" ] || (source /etc/motd.tail 2>/dev/null || true)
 # } End
 EOF
-}
-
-do_setup_yaul_env() {
-  /usr/bin/rm -r -f /tmp/yaul.env
-  /usr/bin/cp "${_newmsys}/opt/libyaul/yaul.env.in" /tmp/yaul.env
-
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_INSTALL_ROOT)=.*#\1=/opt/x-tools/sh2eb-elf#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD_ROOT)=.*#\1=/opt/libyaul#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD)=.*#\1=build#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_CDB)=.*#\1=1#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_OPTION_DEV_CARTRIDGE)=.*#\1=0#g" "/tmp/yaul.env"
-
-  /usr/bin/mv /tmp/yaul.env "${_newmsys}/etc/skel/.yaul.env"
-}
-
-do_build_yaul() {
-  /usr/bin/rm -r -f /tmp/yaul.env
-  /usr/bin/cp "${_newmsys}/opt/libyaul/yaul.env.in" /tmp/yaul.env
-
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_INSTALL_ROOT)=.*#\1=${_newmsys}/opt/x-tools/sh2eb-elf#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD_ROOT)=.*#\1=/tmp#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_BUILD)=.*#\1=yaul.build#g" "/tmp/yaul.env"
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_CDB)=.*#\1=0#g" "/tmp/yaul.env"
-  # We want to compile ssload
-  /usr/bin/sed -E -i "s#^(export\s+YAUL_OPTION_DEV_CARTRIDGE)=.*#\1=1#g" "/tmp/yaul.env"
-
-  pushd . >/dev/null 2>&1
-  cd ${_newmsys}/opt/libyaul
-
-  # Build
-  /usr/bin/bash -e <<EOT
-/usr/bin/rm -r -f /tmp/yaul.build
-/usr/bin/mkdir -p /tmp/yaul.build
-. /tmp/yaul.env
-NOCOLOR=1 SILENT=1 /usr/bin/make install-release
-NOCOLOR=1 SILENT=1 /usr/bin/make install-tools
-/usr/bin/rm -r -f /tmp/yaul.build
-EOT
-
-  popd >/dev/null 2>&1
 }
 
 do_seds() {
@@ -395,7 +313,7 @@ do_create_archives() {
   /usr/bin/mkdir -p "${_data}"
   local _dirs=
   for curr_dir in ${ARCHIVE_EXPORT[@]}; do
-    if [ -d ${_newmsys}${curr_dir} ] || [ -f ${_newmsys}${curr_dir} ]; then
+    if [ -d "${_newmsys}${curr_dir}" ] || [ -f "${_newmsys}${curr_dir}" ]; then
       _dirs="${_dirs} ${_newmsys}$curr_dir"
     fi
   done
@@ -432,19 +350,14 @@ do_create_chroot_system
 do_change_icon
 do_remove_previous_installer
 do_create_dirs
-do_copy_toolchain
 do_seds
 do_copy_post_install_script
 do_copy_skel_files
-do_repository_clone
-do_setup_yaul_env
 do_setup_bashrc
 do_create_motd
-do_install_packages
-do_build_yaul
-do_download_other_dependencies
+do_modify_pacman
+do_download_packages
 do_setup_emulators
-do_hack_toolchain
 do_cleanup_tmp_directory
 do_create_archives
 do_make_installer
