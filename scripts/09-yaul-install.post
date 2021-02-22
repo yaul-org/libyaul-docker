@@ -1,0 +1,25 @@
+{
+PACMAN_PACKAGES=(
+  mingw-w64-x86_64-yaul-tool-chain
+  mingw-w64-x86_64-yaul-git
+  mingw-w64-x86_64-yaul-emulator-yabause
+  mingw-w64-x86_64-yaul-emulator-mednafen 
+  yaul-examples-git
+)
+
+# /usr/bin/pacman -Sy --quiet --noconfirm
+
+# Install dependencies
+/usr/bin/pacman -Qi ${PACMAN_PACKAGES[@]} >/dev/null 2>&1 || {
+    /usr/bin/pacman -S --quiet --noconfirm --needed ${PACMAN_PACKAGES[@]}
+}
+
+cp /opt/tool-chains/sh2eb-elf/yaul.env.in "${HOME}/.yaul.env" 2>/dev/null || true
+
+unset PACMAN_PACKAGES
+}
+
+# Local Variables:
+# mode: sh
+# sh-basic-offset: 4
+# End:
