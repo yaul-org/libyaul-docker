@@ -1,7 +1,7 @@
 BUILD_PATH?=
 
 DOCKER?= docker
-DOCKER_IMAGE?= yaul:latest
+DOCKER_IMAGE?= ijacquez/yaul:latest
 DOCKER_NAME?= dev
 
 ifeq ($(strip $(SILENT)),)
