@@ -1,4 +1,1 @@
-/*.exe
-/*.log
-/*.tar.xz
-!/msys2-base-x86_64-*.tar.xz
+/Makefile
