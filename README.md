@@ -39,3 +39,18 @@ The following targets are available for working with your project:
 1. `clean` will clean your project.
 
 2. `build` will build your project.
+
+### Updating packages
+
+There are two ways to update Yaul packages:
+
+1. Pull the latest image,
+
+       docker pull ijacquez/yaul:latest
+
+2. Or update the packages directly in your container.
+
+       CONTAINER_ID="<container-id>" docker-utils/update-packages.sh
+
+   The latter will require that you pass in the container ID to run an existing
+   container.
