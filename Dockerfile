@@ -21,27 +21,32 @@ RUN useradd -m yaul
 
 WORKDIR /work
 
+ADD VERSION .
+
 RUN /usr/bin/pacman -Sy --noconfirm \
         archlinux-keyring && \
+\
     /usr/bin/pacman -Syyu --noconfirm && \
+\
     /usr/bin/pacman -S --noconfirm \
         base-devel \
         git \
-        archlinux-keyring
-
-RUN echo "yaul ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yaul
-
-USER yaul
-
-RUN sudo -E /bin/sh -c 'printf -- "\n\
+        archlinux-keyring && \
+\
+    echo "yaul ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yaul && \
+\
+    /bin/sh -c 'printf -- "\n\
 [yaul-linux]\n\
 SigLevel = Optional TrustAll\n\
 Server = http://packages.yaul.org/linux/x86_64\n" >> /etc/pacman.conf'
 
-RUN sudo -E /usr/bin/pacman -Syy --noconfirm && \
-    sudo -E /usr/bin/pacman -S --noconfirm \
+ARG UPDATE_PACKAGES
+RUN /usr/bin/pacman -Syy --noconfirm && \
+    /usr/bin/pacman -S --noconfirm \
         yaul-tool-chain-git \
         yaul \
         yaul-examples-git
+
+USER yaul
 
 CMD ["/bin/bash"]
