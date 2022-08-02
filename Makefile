@@ -18,7 +18,7 @@ define macro-check-progname
   @set -e; \
     test -n "$1" || { printf -- "Undefined BUILD_PATH.\n" >&2; exit 1; }; \
     test -e "$1" || { printf -- "\"$1\" does not exist\n" >&2; exit 1; }; \
-	test -d "$1" || { printf -- "\"$1\" is not a directory\n" >&2; exit 1; }
+    test -d "$1" || { printf -- "\"$1\" is not a directory\n" >&2; exit 1; }
 endef
 
 # $@ -> Command ...
@@ -38,7 +38,8 @@ all:
 
 .PHONY: copy-template
 copy-template:
-	$(call macro-run-project) cp -v -r /opt/yaul-examples/_template .
+	@$(call macro-check-progname,$(BUILD_PATH))
+	$(call macro-run-project) cp -v -r /opt/yaul-examples/_template/. ./
 
 .PHONY: clean
 clean:
