@@ -1,4 +1,5 @@
 BUILD_PATH?=
+BUILD_MAKE_FLAGS?= -j
 
 DOCKER?= docker
 DOCKER_IMAGE?= ijacquez/yaul:latest
@@ -49,4 +50,4 @@ clean:
 .PHONY: build
 build:
 	@$(call macro-check-progname,$(BUILD_PATH))
-	$(call macro-run-project) make
+	$(call macro-run-project) make $(BUILD_MAKE_FLAGS)
