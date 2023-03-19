@@ -22,8 +22,6 @@ to your project. There are two ways to set `BUILD_PATH`:
 
        BUILD_PATH=<project-name> make ...
 
-3. Edit the `Makefile` and change the default value to the name of your project; or
-
 After setting `BUILD_PATH`, copy the template as the starting point of the
 project.
 
@@ -39,20 +37,6 @@ The following targets are available for working with your project:
 
 ### Updating packages
 
-There are two ways to update Yaul packages:
+Pull the latest image:
 
-1. Pull the latest image,
-
-       docker pull ijacquez/yaul:latest
-
-2. Or update the packages directly in your container.
-
-       CONTAINER_ID="update-packages"
-       docker run -t -d --name "$CONTAINER_ID" ijacquez/yaul:latest
-       cat << EOF | docker exec -i "$CONTAINER_ID" bash -x -e
-       sudo pacman -Syy
-       pacman -Sl yaul-linux | \
-           awk '/\[installed.*]/ { print \$2 }' | xargs sudo pacman --noconfirm -S
-       EOF
-       docker stop "$CONTAINER_ID"
-       docker rm "$CONTAINER_ID"
+    docker pull ijacquez/yaul:latest
