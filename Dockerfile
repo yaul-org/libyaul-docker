@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM archlinux:base-devel-20230312.0.133040 AS extractor
+FROM archlinux:base-devel-20240101.0.204074 AS extractor
 WORKDIR /opt
 RUN /bin/sh -c 'printf -- "\n\n\
 [yaul]\n\
@@ -27,7 +27,6 @@ ENV YAUL_ARCH_M68K_PREFIX=m68keb-elf
 ENV YAUL_BUILD_ROOT=${HOME}
 ENV YAUL_BUILD=build
 ENV YAUL_CDB=0
-ENV YAUL_OPTION_MALLOC_IMPL="tlsf"
 ENV SILENT=1
 ENV MAKE_ISO_XORRISOFS=/usr/bin/xorrisofs
 ENV CDB_GCC=/usr/bin/gcc
