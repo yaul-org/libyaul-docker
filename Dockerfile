@@ -11,6 +11,7 @@ Server = http://packages.yaul.org/pacman/x86_64\n" >> /etc/pacman.conf' && \
         yaul-tool-chain-git \
         yaul \
         yaul-examples-git && \
+    /usr/bin/pacman-key --init && \
     /usr/bin/pacman -Q yaul | sed -E 's/^yaul\s+//g' >> /opt/yaul.version && \
     /usr/bin/pacman -Q yaul-tool-chain-git | sed -E 's/^yaul-tool-chain-git\s+//g' >> /opt/yaul-tool-chain-git.version && \
     /usr/bin/pacman -Q yaul-examples-git | sed -E 's/^yaul-examples-git\s+//g' >> /opt/yaul-examples-git.version
@@ -18,7 +19,7 @@ Server = http://packages.yaul.org/pacman/x86_64\n" >> /etc/pacman.conf' && \
 # debian:unstable is required: glibc >=2.34
 FROM debian:unstable-20230227-slim
 
-ENV HOME /work
+ENV HOME=/work
 
 ENV YAUL_INSTALL_ROOT=/opt/tool-chains/sh2eb-elf
 ENV YAUL_PROG_SH_PREFIX=
